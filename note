@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 🔐 Helper function: check if user is admin
+    function isAdmin() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // 🛍️ Products - public read, admin write only
+    match /products/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // 👤 Users - read for login, write own profile
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // 📂 User subcollections (like orders, settings, etc.)
+    match /users/{userId}/{document=**} {
+      // Owner access
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Admin can read everything
+      allow read: if isAdmin();
+    }
+
+    // 📦 Orders collection
+    match /orders/{orderId} {
+      // Logged-in users can create orders
+      allow create: if request.auth != null;
+
+      // Users can read their own orders
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+
+      // ✅ Admin can read ALL orders
+      allow read: if isAdmin();
+    }
+
+  }
+}
+
+
+
+
+
+
+RULE 2
+
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Products - public read/write for admin
+    match /products/{doc} {
+      allow read, write: if true;  
+    }
+    
+    // Users - read for login, write own
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // ALL subcollections - OWN + ADMIN READ ALL ORDERS
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if true;
+    }
+
+    // ADD THIS BLOCK ↓↓↓
+    match /orders/{orderId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+    // END OF ADDED BLOCK ↑↑↑
+
+  }
+}
+    
+
+
+
+    nav
+
+    <a href="account.html" class="nav-link ${isActive('account.html')}">
+            <i class="fas fa-user"></i> Mon compte
+          </a>
+          <a href="cart.html" class="nav-link ${isActive('cart.html')}">
+            <i class="fas fa-shopping-cart"></i> Panier
+            ${totalItems > 0 ? `<span class="nav-badge">${totalItems}</span>` : ''}
+          </a>
