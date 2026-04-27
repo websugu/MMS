@@ -29,7 +29,6 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('admin-email').value.trim();
   const password = document.getElementById('admin-password').value.trim();
-  const enteredUid = document.getElementById('admin-uid').value.trim();
 
   btn.disabled = true;
   btn.textContent = 'Logging in...';
@@ -39,14 +38,8 @@ form.addEventListener('submit', async (e) => {
     // Step 1: Sign in with email/password
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-    // Step 2: Verify UID matches
+    // Step 2: Verify admin privileges
     const user = userCredential.user;
-    if (user.uid !== enteredUid) {
-      await auth.signOut();
-      throw new Error('UID does not match the authenticated user');
-    }
-
-    // Step 3: Verify admin privileges
     const isAdmin = checkAdmin(user.uid);
     if (!isAdmin) {
       await auth.signOut();
